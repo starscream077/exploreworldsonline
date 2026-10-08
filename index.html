@@ -27,8 +27,13 @@ kbd{font:700 .85em Georgia,serif;background:#f5c45126;border:1px solid #f5c45188
 .tl,.tr{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px}
 .tl{left:14px}.tr{right:14px}
 .b{width:62px;height:62px;border-radius:50%;border:2px solid #f5c451aa;background:#000a;color:#f5c451;font-size:24px;touch-action:none}
+#mobile-hint{display:none;opacity:.8;font-size:14px}
+#rotate{display:none;position:fixed;inset:0;z-index:20;align-items:center;justify-content:center;text-align:center;padding:28px;background:rgba(5,8,3,.94);font-size:clamp(22px,6vw,32px);line-height:1.5}
+@media (pointer:coarse){#mobile-hint{display:block}}
+@media (pointer:coarse) and (orientation:portrait){body.game-active #rotate{display:flex}}
 </style></head><body>
 <canvas id="c"></canvas>
+<div id="rotate">Turn your phone sideways to play in landscape.</div>
 <div id="ov">
 <div class="t" id="p1">In the age of ancient Bharat, Prince Aryavarman was the pride of Vijayapura, until a web of lies woven by jealous ministers cast him out. Stripped of his name and his throne, he vanished into the endless forest.</div>
 <div class="t" id="p2">Years have passed. Now dark news reaches his hut: enemies close in on the kingdom, and its people cry out for their prince. But every path home is guarded by beasts, hidden pits, raging rivers and hired blades.</div>
@@ -38,6 +43,7 @@ kbd{font:700 .85em Georgia,serif;background:#f5c45126;border:1px solid #f5c45188
 <p><kbd>▲</kbd> or <kbd>W</kbd> jump &nbsp; <kbd>▼</kbd> or <kbd>S</kbd> duck</p>
 <p><kbd>Space</kbd> or <kbd>J</kbd> (⚔ button on phones): attack, or grab a branch</p>
 <p style="opacity:.75;font-size:.9em">Jump streams and pits. Duck low hangers. Land on dacoits to stun them. At a wide river, jump, then press action to swing across.</p>
+<p id="mobile-hint">Starting on mobile requests full screen and landscape. If your browser cannot switch automatically, rotate your phone sideways.</p>
 <button class="btn" id="go">Begin the run</button></div>
 <button id="skip">Skip ▸</button>
 </div>
@@ -91,8 +97,15 @@ function gen(){const S=LV.q.split(' ');
 const Wd={monkey:34,lion:84,tiger:84,bear:64,snake:48,stream:70,river:280,pit:64,dacoit:30,citizen:26,dog:40,cow:54,pigeons:56,spy:28,spyH:30,cart:76,goat:36,cattle:54,rabbit:20,camel:56,leopard:84},Hh={monkey:36,lion:44,tiger:44,bear:56,snake:14,dacoit:76,stream:0,river:0,pit:0,citizen:66,dog:28,cow:42,pigeons:22,spy:70,spyH:60,cart:48,goat:30,cattle:42,rabbit:18,camel:50,leopard:44};
 ob=[];let p=800;S.forEach((s,i)=>{ob.push({t:s,x:p,tx:p,w:Wd[s]+(s=='stream'||s=='pit'?lv*5:0),h:Hh[s],hp:s=='bear'?2:1,r:0,dy:0,dv:0,dd:0,vl:36,va:0,vv:0,lift:LF[s]||0});p+=LV.sp+Rn(i+lv*20)*70+(s=='river'?170:0)});LEN=p+300}
 function reset(){sawT={};startLevel(0,0)}
-function lvlDone(){mode='lvl';$('pb').style.display='none';$('et').textContent='Level '+(lv+1)+' complete!';$('es').textContent='Next: '+LVS[lv+1].n+'. Score: '+score;$('eb').textContent='Next level';$('end').style.display='block'}
-function startLevel(n,s0,k0){lv=n;LV=LVS[n];th=LV;ls=score=s0;ks=kc=k0||0;tq=[];rw=null;lt=3;fl=0;lj=0;mus.pl=1;mood(pick());wamb();sc=0;px=150;py=G;vy=0;hp=3;inv=0;atk=0;grab=null;low=null;fallG=null;k={};gen();mode='card';clearTimeout(ctid);$('lvn').textContent='LEVEL '+(n+1)+' OF '+LVS.length;$('lvt').textContent=LV.n;$('lvs').textContent=LV.d;$('lv').classList.add('on');ctid=setTimeout(()=>{$('lv').classList.remove('on');if(mode=='card')mode='play'},2800);$('end').style.display='none';$('ps').style.display='none';$('pz').style.display='none';$('ov').classList.add('h');$('pb').style.display='block';$('tc').style.visibility='';$('tc').style.display=matchMedia('(pointer:coarse)').matches?'block':'none'}
+function launch(){if(!co){reset();return}
+let fullscreen;
+try{fullscreen=document.documentElement.requestFullscreen?document.documentElement.requestFullscreen():Promise.reject(new Error('Fullscreen is unavailable'))}catch(e){fullscreen=Promise.reject(e)}
+const orientation=fullscreen.then(()=>{if(screen.orientation&&screen.orientation.lock)return screen.orientation.lock('landscape');throw new Error('Orientation lock is unavailable')});
+reset();
+Promise.allSettled([fullscreen,orientation]).then(results=>{if(results.some(result=>result.status==='rejected'))say('If full screen or landscape did not activate, use your browser full-screen option and rotate your phone.')})}
+if(co)$('go').textContent='Play full screen';
+function lvlDone(){mode='lvl';document.body.classList.remove('game-active');$('pb').style.display='none';$('et').textContent='Level '+(lv+1)+' complete!';$('es').textContent='Next: '+LVS[lv+1].n+'. Score: '+score;$('eb').textContent='Next level';$('end').style.display='block'}
+function startLevel(n,s0,k0){lv=n;LV=LVS[n];th=LV;ls=score=s0;ks=kc=k0||0;tq=[];rw=null;lt=3;fl=0;lj=0;mus.pl=1;mood(pick());wamb();sc=0;px=150;py=G;vy=0;hp=3;inv=0;atk=0;grab=null;low=null;fallG=null;k={};gen();mode='card';document.body.classList.add('game-active');clearTimeout(ctid);$('lvn').textContent='LEVEL '+(n+1)+' OF '+LVS.length;$('lvt').textContent=LV.n;$('lvs').textContent=LV.d;$('lv').classList.add('on');ctid=setTimeout(()=>{$('lv').classList.remove('on');if(mode=='card')mode='play'},2800);$('end').style.display='none';$('ps').style.display='none';$('pz').style.display='none';$('ov').classList.add('h');$('pb').style.display='block';$('tc').style.visibility='';$('tc').style.display=matchMedia('(pointer:coarse)').matches?'block':'none'}
 function pauseG(){if(mode!='play')return;mode='paused';k={};$('ps').style.display='block';$('tc').style.visibility='hidden'}
 function unpause(){if(mode!='paused')return;mode='play';$('ps').style.display='none';$('tc').style.visibility=''}
 $('pb').onclick=pauseG;$('rsm').onclick=unpause;$('rst').onclick=()=>startLevel(lv,ls,ks);
@@ -101,17 +114,18 @@ function act(){if(mode=='pause'){resume();return}if(mode!='play')return;
 if(!grab&&!low&&py<G-40){const o=ob.find(o=>o.t=='river'&&Math.abs(wx()-(o.x+o.w/2))<150);if(o){low={o,lt:0};atk=0;sfx('grab');return}}
 if(atk<=0&&!grab&&!low){atk=.28;atkId++;sfx('swing')}}
 function resume(){if(mode=='pause'){mode='play';$('pz').style.display='none'}}
-function fin(win){mode=win?'win':'over';$('pb').style.display='none';$('et').textContent=win?'Long live the Prince!':'The prince has fallen';$('es').textContent=win?'The kingdom is saved and Aryavarman takes his rightful place. Final score: '+score:'The kingdom still waits for its prince. Score: '+score;$('eb').textContent=win?'Run again':'Try again';$('end').style.display='block'}
+function fin(win){mode=win?'win':'over';document.body.classList.remove('game-active');$('pb').style.display='none';$('et').textContent=win?'Long live the Prince!':'The prince has fallen';$('es').textContent=win?'The kingdom is saved and Aryavarman takes his rightful place. Final score: '+score:'The kingdom still waits for its prince. Score: '+score;$('eb').textContent=win?'Run again':'Try again';$('end').style.display='block'}
 const map={ArrowLeft:'L',KeyA:'L',ArrowRight:'R',KeyD:'R',ArrowUp:'U',KeyW:'U',ArrowDown:'D',KeyS:'D',Space:'A',KeyJ:'A',KeyK:'A',KeyE:'A'};
 addEventListener('keydown',e=>{if(e.code=='KeyM'){mus.ok?tgl():sa();return}if(e.code=='KeyP'||e.code=='Escape'){e.preventDefault();mode=='paused'?unpause():pauseG();return}const m=map[e.code];if(!m||mode=='paused')return;e.preventDefault();if(!k[m]&&m=='A')act();else if(mode=='pause')resume();k[m]=1});
 addEventListener('keyup',e=>{const m=map[e.code];if(m)k[m]=0});addEventListener('blur',()=>{k={};pauseG()});
 document.querySelectorAll('[data-k]').forEach(b=>{const q=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();k[q]=1;if(q=='A')act();else resume()});['pointerup','pointercancel','pointerleave'].forEach(v=>b.addEventListener(v,()=>k[q]=0))});
 $('mb').onclick=()=>mus.ok?tgl():sa();
 const first=e=>{if(!(e.target&&e.target.id=='mb'))sa()};addEventListener('pointerdown',first);addEventListener('keydown',first);
-$('pzb').onclick=resume;$('go').onclick=reset;$('eb').onclick=()=>{mode=='lvl'?startLevel(lv+1,score,kc):mode=='win'?reset():startLevel(lv,ls,ks)};
+$('pzb').onclick=resume;$('go').onclick=launch;$('eb').onclick=()=>{mode=='lvl'?startLevel(lv+1,score,kc):mode=='win'?reset():startLevel(lv,ls,ks)};
 // intro timeline
 const T=[];const at=(ms,f)=>T.push(setTimeout(f,ms)),on=(i,v)=>$(i).classList.toggle('on',v);
-at(600,()=>on('p1',1));at(7200,()=>on('p1',0));at(8700,()=>on('p2',1));at(15500,()=>on('p2',0));at(17000,()=>on('big',1));at(20000,()=>on('big',0));at(21200,()=>{on('how',1);$('skip').style.display='none'});
+if(co){on('how',1);$('skip').style.display='none'}
+else{at(600,()=>on('p1',1));at(7200,()=>on('p1',0));at(8700,()=>on('p2',1));at(15500,()=>on('p2',0));at(17000,()=>on('big',1));at(20000,()=>on('big',0));at(21200,()=>{on('how',1);$('skip').style.display='none'})}
 $('skip').onclick=()=>{T.forEach(clearTimeout);['p1','p2','big'].forEach(i=>on(i,0));on('how',1);$('skip').style.display='none'};
 // ---------- drawing ----------
 function dome(cx,by,r,c){x.fillStyle=c;x.beginPath();x.arc(cx,by,r,Math.PI,0);x.fill();x.strokeStyle=c;x.lineWidth=2;x.beginPath();x.moveTo(cx,by-r);x.lineTo(cx,by-r-14);x.stroke()}
